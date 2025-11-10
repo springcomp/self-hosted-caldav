@@ -1,0 +1,53 @@
+services:
+  baikal:
+    image: ckulka/baikal:nginx
+    container_name: dav
+    restart: always
+    labels:
+      traefik.enable: true
+      traefik.http.routers.baikal.rule: Host(`dav.${DOMAIN}`)
+      traefik.http.routers.baikal.tls: true
+      traefik.http.routers.baikal.tls.certresolver: ${LE_CHALLENGE:-tls}
+      # Traefik middleware required for iOS, see https://github.com/ckulka/baikal-docker/issues/37.
+      traefik.http.routers.baikal.middlewares: baikal-dav
+      traefik.http.middlewares.baikal-dav.redirectregex.regex: https://(.*)/.well-known/(card|cal)dav
+      traefik.http.middlewares.baikal-dav.redirectregex.replacement: https://$$1/dav.php/
+      traefik.http.middlewares.baikal-dav.redirectregex.permanent: true
+    networks:
+      - traefik
+      - dav
+    volumes:
+      - config:/var/www/baikal/config
+      - data:/var/www/baikal/Specific
+    depends_on:
+      postgres-baikal:
+        condition: service_healthy
+
+  postgres-baikal:
+    image: postgres:12.1
+    container_name: dav-db
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      retries: 3
+      start_period: 1s
+    environment:
+      - POSTGRES_DB=dav
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - dav
+    volumes:
+      - ./dav_db/:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  config:
+    name: dav-config
+  data:
+    name: dav-data
+
+networks:
+  dav:
+    name: dav
+    driver: bridge

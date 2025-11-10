@@ -1,0 +1,18 @@
+
+# If there is already a traefik container running on your host, you can comment out the first include line.
+# But make sure that...
+# - container `baikal` can join traefiks network, defined in traefic static config `providers.docker.network`
+# - container `traefik-certificate-exporter` can access traefiks acme-storage
+
+include:
+  - traefik-compose.yaml
+  - baikal-compose.yaml
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.0.0/24
+          gateway: 10.0.0.1
