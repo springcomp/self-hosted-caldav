@@ -24,17 +24,14 @@ services:
         condition: service_healthy
 
   postgres-baikal:
-    image: postgres:12.1
+    image: postgres:17.7
     container_name: dav-db
+    env_file: .env
     healthcheck:
-      test: [ "CMD", "pg_isready" ]
+      test: [ "CMD-SHELL", "PGPASSWORD=$$POSTGRES_PASSWORD pg_isready -U $$POSTGRES_USER -d dav -h 127.0.0.1 -p 5432 || exit 1" ]
       interval: 10s
       retries: 3
       start_period: 1s
-    environment:
-      - POSTGRES_DB=dav
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
       - dav
     volumes:
